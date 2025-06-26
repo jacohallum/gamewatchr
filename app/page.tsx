@@ -38,32 +38,72 @@ export default function Home() {
     setError('')
     
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false, // Don't redirect automatically
-      })
+      if (isLogin) {
+        // Handle Sign In
+        const result = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        })
 
-      if (result?.error) {
-        setError('Invalid email or password')
-        setLoading(false)
-      } else if (result?.ok) {
-        // Check if session was created successfully
-        const session = await getSession()
-        if (session) {
-          // Redirect to dashboard
-          router.push('/dashboard')
+        if (result?.error) {
+          setError('Invalid email or password')
+          setLoading(false)
+        } else if (result?.ok) {
+          const session = await getSession()
+          if (session) {
+            router.push('/dashboard')
+          } else {
+            setError('Login failed - please try again')
+            setLoading(false)
+          }
         } else {
           setError('Login failed - please try again')
           setLoading(false)
         }
       } else {
-        setError('Login failed - please try again')
-        setLoading(false)
+        // Handle Sign Up
+        const response = await fetch('/api/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          // Registration successful, now sign in
+          const result = await signIn('credentials', {
+            email,
+            password,
+            redirect: false,
+          })
+
+          if (result?.ok) {
+            const session = await getSession()
+            if (session) {
+              router.push('/dashboard')
+            } else {
+              setError('Account created but login failed. Please try signing in.')
+              setLoading(false)
+            }
+          } else {
+            setError('Account created but login failed. Please try signing in.')
+            setLoading(false)
+          }
+        } else {
+          setError(data.message || 'Failed to create account')
+          setLoading(false)
+        }
       }
     } catch (error) {
-      console.error('Login error:', error)
-      setError('An error occurred during login')
+      console.error('Auth error:', error)
+      setError('An error occurred during authentication')
       setLoading(false)
     }
   }
