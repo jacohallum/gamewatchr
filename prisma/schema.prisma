@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  watchlist     Watchlist[]
+  accounts      Account[]
+  sessions      Session[]
+  notifications Notification[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  fighterId String?
+  eventId   String?
+  type      String
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fighter Fighter? @relation(fields: [fighterId], references: [id], onDelete: Cascade)
+  event   Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  content   String
+  metadata  Json?
+  sent      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  date      DateTime?
+  location  String?
+  isKnown   Boolean   @default(true)
+  isPast    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  fights             Fight[]
+  unnannouncedFights UnnannouncedFight[]
+  fightLogs          FightLog[]
+  watchlists         Watchlist[]
+
+  @@map("events")
+}
+
+model Fighter {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  nickname    String?
+  weightClass String?
+  record      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fightAthletes FightAthlete[]
+  watchlists    Watchlist[]
+
+  @@map("fighters")
+}
+
+model Fight {
+  id            String   @id @default(cuid())
+  name          String
+  eventId       String
+  weightClass   String?
+  isMainEvent   Boolean  @default(false)
+  isCoMainEvent Boolean  @default(false)
+  isTitleFight  Boolean  @default(false)
+  isUnannounced Boolean  @default(false)
+  isKnown       Boolean  @default(true)
+  status        String?
+  result        String?
+  method        String?
+  round         Int?
+  time          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event             Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  athletes          FightAthlete[]
+  unnannouncedFight UnnannouncedFight?
+  fightLogs         FightLog[]
+
+  @@map("fights")
+}
+
+model FightAthlete {
+  id        String   @id @default(cuid())
+  fightId   String
+  fighterId String
+  corner    String
+  isWinner  Boolean?
+  createdAt DateTime @default(now())
+
+  fight   Fight   @relation(fields: [fightId], references: [id], onDelete: Cascade)
+  fighter Fighter @relation(fields: [fighterId], references: [id], onDelete: Cascade)
+
+  @@unique([fightId, fighterId])
+  @@map("fight_athletes")
+}
+
+model UnnannouncedFight {
+  id           String   @id @default(cuid())
+  eventId      String
+  fightId      String   @unique
+  announcement String?
+  createdAt    DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fight Fight @relation(fields: [fightId], references: [id], onDelete: Cascade)
+
+  @@map("unnannounced_fights")
+}
+
+model FightLog {
+  id        String   @id @default(cuid())
+  fightId   String?
+  eventId   String?
+  fightName String
+  eventName String
+  action    String
+  details   Json?
+  timestamp DateTime @default(now())
+
+  fight Fight? @relation(fields: [fightId], references: [id], onDelete: SetNull)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@map("fight_logs")
+}
