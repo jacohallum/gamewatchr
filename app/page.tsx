@@ -128,7 +128,7 @@ export default function Home() {
           <h1 className="text-5xl font-bold text-white mb-2">
             Game<span className="text-red-500">Watchr</span>
           </h1>
-          <p className="text-gray-400 text-lg">Your MMA Command Center</p>
+          <p className="text-gray-400 text-lg">Your AI-Powered Sports Command Center</p>
         </div>
 
         {/* Section 2: Auth Card with Octagon Shape and Ticker */}
@@ -271,7 +271,7 @@ export default function Home() {
 
         {/* Section 3: App Features */}
         <div className="text-center text-gray-400 text-sm space-y-1">
-          <p>🥊 Track your favorite fighters</p>
+          <p>🥊 Track your favorite teams</p>
           <p>📅 Never miss an event</p>
           <p>🔔 Get personalized notifications</p>
         </div>

@@ -1,11 +1,12 @@
 //app\api\auth\[...nextauth]\route.ts
-import NextAuth from 'next-auth'
+import NextAuth, { NextAuthOptions } from 'next-auth'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcryptjs'
 
-const handler = NextAuth({
+// Export the authOptions with proper TypeScript typing
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -16,7 +17,7 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         console.log('🔍 Authorize function called with:', { email: credentials?.email })
-        
+       
         if (!credentials?.email || !credentials?.password) {
           console.log('❌ Missing credentials')
           return null
@@ -27,14 +28,14 @@ const handler = NextAuth({
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           }) as any
-          
+         
           console.log('👤 User found:', user ? 'Yes' : 'No')
          
           if (user && user.password) {
             console.log('🔐 Comparing passwords...')
             const passwordMatch = await compare(credentials.password, user.password)
             console.log('🔐 Password match:', passwordMatch)
-            
+           
             if (passwordMatch) {
               // Return user without password for security
               const { password, ...userWithoutPassword } = user
@@ -42,7 +43,7 @@ const handler = NextAuth({
               return userWithoutPassword
             }
           }
-          
+         
           console.log('❌ Authentication failed')
           return null
         } catch (error) {
@@ -74,6 +75,7 @@ const handler = NextAuth({
   },
   // Add debug logging
   debug: process.env.NODE_ENV === 'development',
-})
+}
 
+const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }
